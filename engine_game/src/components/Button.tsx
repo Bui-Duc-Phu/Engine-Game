@@ -1,10 +1,12 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { GameComponent } from '../core/GameComponent';
 
 interface ButtonProps {
   onClick?: () => void;
   onKeyUp?: (event: React.KeyboardEvent) => void;
   onKeyDown?: (event: React.KeyboardEvent) => void;
+  onMouseDown?: () => void;
+  onMouseUp?: () => void;
   children: React.ReactNode;
   className?: string;
   disabled?: boolean;
@@ -16,10 +18,12 @@ class ButtonComponent implements GameComponent {
   private currentCooldown: number = 0;
   private isOnCooldown: boolean = false;
   private isKeyPressed: boolean = false;
+  private isMousePressed: boolean = false;
 
   constructor(
     private props: ButtonProps,
-    private onCooldownChange: (isOnCooldown: boolean) => void
+    private onCooldownChange: (isOnCooldown: boolean) => void,
+    private onMouseStateChange: (isPressed: boolean) => void
   ) {
     this.cooldownTime = props.cooldown || 0;
   }
@@ -54,7 +58,7 @@ class ButtonComponent implements GameComponent {
   }
 
   handleKeyDown(event: React.KeyboardEvent): void {
-    if (!this.isKeyPressed && !this.isOnCooldown && !this.props.disabled) {
+    if (!this.isKeyPressed && !this.props.disabled) {
       this.isKeyPressed = true;
       if (this.props.onKeyDown) {
         this.props.onKeyDown(event);
@@ -70,25 +74,49 @@ class ButtonComponent implements GameComponent {
       }
     }
   }
+
+  handleMouseDown(): void {
+    if (!this.props.disabled) {
+      this.isMousePressed = true;
+      this.onMouseStateChange(true);
+      if (this.props.onMouseDown) {
+        this.props.onMouseDown();
+      }
+    }
+  }
+
+  handleMouseUp(): void {
+    if (this.isMousePressed) {
+      this.isMousePressed = false;
+      this.onMouseStateChange(false);
+      if (this.props.onMouseUp) {
+        this.props.onMouseUp();
+      }
+    }
+  }
 }
 
 const Button: React.FC<ButtonProps> = ({
   onClick,
   onKeyUp,
   onKeyDown,
+  onMouseDown,
+  onMouseUp,
   children,
   className = '',
   disabled = false,
   cooldown = 0,
 }) => {
   const [isOnCooldown, setIsOnCooldown] = React.useState(false);
+  const [isMousePressed, setIsMousePressed] = React.useState(false);
   const buttonRef = useRef<ButtonComponent | null>(null);
 
   useEffect(() => {
     // Create button component instance
     buttonRef.current = new ButtonComponent(
-      { onClick, onKeyUp, onKeyDown, children, className, disabled, cooldown },
-      setIsOnCooldown
+      { onClick, onKeyUp, onKeyDown, onMouseDown, onMouseUp, children, className, disabled, cooldown },
+      setIsOnCooldown,
+      setIsMousePressed
     );
 
     // Cleanup
@@ -115,15 +143,39 @@ const Button: React.FC<ButtonProps> = ({
     }
   };
 
+  const handleMouseDown = (event: React.MouseEvent) => {
+    event.preventDefault();
+    if (buttonRef.current) {
+      buttonRef.current.handleMouseDown();
+    }
+  };
+
+  const handleMouseUp = (event: React.MouseEvent) => {
+    event.preventDefault();
+    if (buttonRef.current) {
+      buttonRef.current.handleMouseUp();
+    }
+  };
+
+  const handleMouseLeave = (event: React.MouseEvent) => {
+    event.preventDefault();
+    if (isMousePressed && buttonRef.current) {
+      buttonRef.current.handleMouseUp();
+    }
+  };
+
   return (
     <button
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
       className={`px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors ${
-        (disabled || isOnCooldown) ? 'opacity-50 cursor-not-allowed' : ''
-      } ${className}`}
-      disabled={disabled || isOnCooldown}
+        disabled ? 'opacity-50 cursor-not-allowed' : ''
+      } ${isMousePressed ? 'bg-blue-700' : ''} ${className}`}
+      disabled={disabled}
     >
       {children}
       {isOnCooldown && <span className="ml-2">(Cooldown)</span>}

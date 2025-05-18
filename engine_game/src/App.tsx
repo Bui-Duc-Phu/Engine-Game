@@ -25,13 +25,13 @@ function App() {
   // Constants for game settings
   const FPS = 60;
   const FRAME_TIME = 1000 / FPS; // Time per frame in milliseconds
-  const PIXELS_PER_SECOND = 200; // Base movement speed
+  const PIXELS_PER_SECOND = 300; // Base movement speed
 
   // Update sprite velocity based on direction
   useEffect(() => {
     const newVelocity = direction === 'left' ? -PIXELS_PER_SECOND : direction === 'right' ? PIXELS_PER_SECOND : 0;
     setSpriteVelocity({ x: newVelocity, y: 0 });
-  }, [direction]);
+  }, [direction]);  
 
   // Game loop
   useEffect(() => {
@@ -84,7 +84,7 @@ function App() {
     });
   }, [direction, spritePosition, spriteVelocity]);
 
-  // Handle keyboard events
+  // Handle keyboard and mouse events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') {
@@ -100,20 +100,33 @@ function App() {
       }
     };
 
+    const handleMouseUp = () => {
+      setDirection(null);
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('mouseup', handleMouseUp);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('mouseup', handleMouseUp);
     };
   }, []);
 
-  // Handle button click
-  const handleButtonClick = () => {
-    const initialPosition = { x: 350, y: 250 };
-    setSpritePosition(initialPosition);
-    setSpriteVelocity({ x: 0, y: 0 });
+  // Handle move left button click
+  const handleMoveLeftClick = () => {
+    setDirection('left');
+  };
+
+  // Handle move right button click
+  const handleMoveRightClick = () => {
+    setDirection('right');
+  };
+
+  // Handle stop movement
+  const handleStopMovement = () => {
     setDirection(null);
   };
 
@@ -122,8 +135,7 @@ function App() {
       <div className="game-container" tabIndex={0}>
         <h1>Game Engine Demo</h1>
         <div className="controls">
-          <p>Use Left/Right Arrow keys to move the sprite</p>
-          <p>Click the button to reset position</p>
+          <p>Use Left/Right Arrow keys or buttons to move the sprite</p>
         </div>
         
         {/* Debug Info */}
@@ -133,6 +145,49 @@ function App() {
           <p>Position: X: {Math.round(debugInfo.position.x)}, Y: {Math.round(debugInfo.position.y)}</p>
           <p>Velocity: X: {Math.round(debugInfo.velocity.x)}, Y: {Math.round(debugInfo.velocity.y)}</p>
           <p>FPS: {FPS}</p>
+        </div>
+
+        {/* Movement Buttons */}
+        <div className="movement-buttons">
+          <Button
+            onMouseDown={handleMoveLeftClick}
+            onMouseUp={handleStopMovement}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft') {
+                handleMoveLeftClick();
+              }
+            }}
+            onKeyUp={(e) => {
+              if (e.key === 'ArrowLeft') {
+                handleStopMovement();
+              }
+            }}
+            cooldown={0.1}
+            className="move-button"
+          >
+            ← Move Left
+          </Button>
+
+
+
+          <Button
+            onMouseDown={handleMoveRightClick}
+            onMouseUp={handleStopMovement}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight') {
+                handleMoveRightClick();
+              }
+            }}
+            onKeyUp={(e) => {
+              if (e.key === 'ArrowRight') {
+                handleStopMovement();
+              }
+            }}
+            cooldown={0.1}
+            className="move-button"
+          >
+            Move Right →
+          </Button>
         </div>
         
         {/* Sprite Container */}
@@ -146,16 +201,6 @@ function App() {
             position={spritePosition}
             velocity={spriteVelocity}
           />
-        </div>
-
-        {/* Control Button */}
-        <div className="button-container">
-          <Button
-            onClick={handleButtonClick}
-            cooldown={0.5}
-          >
-            Reset Position
-          </Button>
         </div>
       </div>
     </div>
