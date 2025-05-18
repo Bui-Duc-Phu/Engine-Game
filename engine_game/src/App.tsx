@@ -22,9 +22,14 @@ function App() {
     velocity: { x: 0, y: 0 }
   });
 
+  // Constants for game settings
+  const FPS = 60;
+  const FRAME_TIME = 1000 / FPS; // Time per frame in milliseconds
+  const PIXELS_PER_SECOND = 200; // Base movement speed
+
   // Update sprite velocity based on direction
   useEffect(() => {
-    const newVelocity = direction === 'left' ? -200 : direction === 'right' ? 200 : 0;
+    const newVelocity = direction === 'left' ? -PIXELS_PER_SECOND : direction === 'right' ? PIXELS_PER_SECOND : 0;
     setSpriteVelocity({ x: newVelocity, y: 0 });
   }, [direction]);
 
@@ -32,23 +37,30 @@ function App() {
   useEffect(() => {
     let lastTime = performance.now();
     let animationFrameId: number;
+    let accumulatedTime = 0;
 
     const gameLoop = (currentTime: number) => {
-      const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
+      const deltaTime = currentTime - lastTime;
       lastTime = currentTime;
+      accumulatedTime += deltaTime;
 
-      setSpritePosition(prevPosition => {
-        const newPosition = {
-          x: prevPosition.x + spriteVelocity.x * deltaTime,
-          y: prevPosition.y
-        };
+      // Update only when we've accumulated enough time for a frame
+      while (accumulatedTime >= FRAME_TIME) {
+        setSpritePosition(prevPosition => {
+          const newPosition = {
+            x: prevPosition.x + (spriteVelocity.x / FPS), 
+            y: prevPosition.y
+          };
 
-        // Keep sprite within bounds
-        if (newPosition.x < 0) newPosition.x = 0;
-        if (newPosition.x > 700) newPosition.x = 700;
+          // Keep sprite within bounds
+          if (newPosition.x < 0) newPosition.x = 0;
+          if (newPosition.x > 700) newPosition.x = 700;
 
-        return newPosition;
-      });
+          return newPosition;
+        });
+
+        accumulatedTime -= FRAME_TIME;
+      }
 
       animationFrameId = requestAnimationFrame(gameLoop);
     };
@@ -120,6 +132,7 @@ function App() {
           <p>Direction: {debugInfo.direction || 'None'}</p>
           <p>Position: X: {Math.round(debugInfo.position.x)}, Y: {Math.round(debugInfo.position.y)}</p>
           <p>Velocity: X: {Math.round(debugInfo.velocity.x)}, Y: {Math.round(debugInfo.velocity.y)}</p>
+          <p>FPS: {FPS}</p>
         </div>
         
         {/* Sprite Container */}
@@ -128,15 +141,14 @@ function App() {
           <Sprite
             src="/rank_bac.png"
             alt="Moving Sprite"
-            width={100}
-            height={100}
+            width={50}
+            height={50}
             position={spritePosition}
             velocity={spriteVelocity}
           />
         </div>
+
         {/* Control Button */}
-
-
         <div className="button-container">
           <Button
             onClick={handleButtonClick}
@@ -145,8 +157,6 @@ function App() {
             Reset Position
           </Button>
         </div>
-
-
       </div>
     </div>
   );
