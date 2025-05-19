@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GameEngine } from './core/GameEngine';
 import Sprite from './components/Sprite';
 import Button from './components/Button';
 import './App.css';
